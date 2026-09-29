@@ -20,7 +20,7 @@ curl -fsSL https://himanshu-2010.github.io/hmx-pacman/hmx-signing-key.asc \
 # 2. Trust it, at the right trust level. "ultimate" means "I have checked that
 #    this fingerprint really belongs to the person who says it does".
 #    Full fingerprint:  E203 38C6 BEB6 BBE9 78F9 13DB E6AE D9C6 13DD CF5E
-gpg --lsign-key E20338C6BEB6BBE978F913DBE6AED9C613DDCF5E
+gpg --lsign-key 3D987F64DC5DE0F56A383805117A9800DEC4FCCC
 
 # 3. Add the repository.
 echo "[hmx]

@@ -1,0 +1,7 @@
+# repo-add leaves the previous database behind as *.old when it rebuilds. They are
+# debris, not history: *.old.sig is a signature over a database that is no longer
+# published, so shipping it would be shipping a valid signature for the wrong
+# bytes. They were correctly left untracked the first time, but only because
+# nobody ran `git add -A` -- which is a habit, not a guarantee.
+x86_64/*.old
+x86_64/*.old.sig
