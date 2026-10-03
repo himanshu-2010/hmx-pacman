@@ -17,10 +17,16 @@ competing one. See "This is a stopgap" below.
 curl -fsSL https://himanshu-2010.github.io/hmx-pacman/hmx-signing-key.asc \
   | gpg --import
 
-# 2. Trust it, at the right trust level. "ultimate" means "I have checked that
-#    this fingerprint really belongs to the person who says it does".
-#    Full fingerprint:  E203 38C6 BEB6 BBE9 78F9 13DB E6AE D9C6 13DD CF5E
-gpg --lsign-key 3D987F64DC5DE0F56A383805117A9800DEC4FCCC
+# 2. Check the fingerprint against the one published below, then sign it locally
+#    so pacman accepts it. Full fingerprint:
+#        3D98 7F64 DC5D E0F5 6A38 3805 117A 9800 DEC4 FCCC
+#    Check *that*, not the name or the email: those are what an attacker copies.
+#    If this appears to do nothing and pacman later says
+#        error: hmx: signature from "..." is unknown trust
+#    then the keyring has no local secret key and the signing silently no-ops.
+#    The first line creates one and only matters on an unusual setup.
+sudo pacman-key --init
+sudo pacman-key --lsign 3D987F64DC5DE0F56A383805117A9800DEC4FCCC
 
 # 3. Add the repository.
 echo "[hmx]
@@ -30,6 +36,29 @@ Server = https://himanshu-2010.github.io/hmx-pacman/\$arch" | sudo tee -a /etc/p
 # 4. Install.
 sudo pacman -Sy hmx
 ```
+
+#### Why step 2 exists, and the trap inside it
+
+A local signature is what pacman needs; ownertrust is not required. This was
+measured rather than assumed, because the plausible story is wrong:
+
+| keyring state | `gpg --lsign-key` | validity | `pacman -Sy`, `SigLevel = Required` |
+|---|---|---|---|
+| has a local secret key (normal Arch) | exit 0 | `f` full | **exit 0** |
+| no local secret key, `--batch --yes` | **exit 0** | `-` unchanged | `unknown trust` |
+| no local secret key, `--command-fd 0` | exit 2 | `-` unchanged | `unknown trust` |
+
+The row that matters is the second. With no local secret key the command reports
+**success** — it prints `Key not changed so no update needed` and exits 0 —
+having changed nothing. Validity stays unset, and the first sign of trouble is
+not here at all; it is pacman's `unknown trust` several steps later, which names
+neither signing nor the keyring as the cause. The fix is `pacman-key --init`,
+which creates the local key, and which Arch already does on a normal install.
+
+`pacman-key --lsign` is used above rather than `gpg --lsign-key` because it is
+the documented interface, not because it does anything the other does not: it is
+implemented as a plain `gpg --lsign-key` with `2>/dev/null`, so in the failing row
+above it swallows the error that the bare command would have shown you.
 
 Or let `install.sh` do steps 3 and 4:
 
